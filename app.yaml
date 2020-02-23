@@ -1,0 +1,5 @@
+runtime: python37
+service: diff
+instance_class: F4_HIGHMEM
+env_variables:
+    BUCKET_NAME: 
