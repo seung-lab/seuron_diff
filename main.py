@@ -30,7 +30,7 @@ def get_diffs():
             continue
         else:
             segname = b.name[len(prefix)+1:-5]
-            url = "https://{}/{}".format(selfip, segname)
+            url = str(segname)
             msg += """<p>
 <a href={}>{}</a></p>
 """.format(url, segname)
@@ -76,9 +76,6 @@ def get_segpair(name,limit):
                 size2=p['gt_size'],
             )
     return msg
-
-
-selfip = "diff-dot-project-name.appspot.com"
 
 print("diff server started")
 if __name__ == '__main__':
