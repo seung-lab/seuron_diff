@@ -45,36 +45,40 @@ def get_segpair_limit(name,limit):
     return get_segpair(name, int(limit))
 
 def get_segpair(name,limit):
-    from cloudvolume import Storage
+    from cloudfiles import CloudFiles
     from copy import deepcopy
     import urllib
     import os
     bucket_name = os.environ["BUCKET_NAME"]
     gs_path = "gs://"+os.path.join(bucket_name, "diff")
-    ng_host = "neuromancer-seung-import.appspot.com"
     msg = """<p>Segment pairs differ significantly</p>"""
-    with Storage(gs_path) as storage:
-        data = storage.get_json(name+'.json')
-        ng_payload = data['ng_payload']
-        if len(data['seg_pairs']) < limit:
-            limit = len(data['seg_pairs'])
-        for i, p in enumerate(data['seg_pairs'][:limit]):
-            payload = deepcopy(ng_payload)
-            payload['layers']['seg']['segments'] = [str(p['seg_id'])]
-            if 'gt' in payload['layers']:
-                payload['layers']['gt']['segments'] = [str(p['gt_id'])]
-            elif 'valid' in payload['layers']:
-                payload['layers']['valid']['segments'] = [str(p['gt_id'])]
-            url = "https://{}/#!{}".format(ng_host, urllib.parse.quote(json.dumps(payload)))
-            msg += """<p>
+    storage = CloudFiles(gs_path)
+    data = storage.get_json(name+'.json')
+    ng_host = data.get('ng_host', "neuromancer-seung-import.appspot.com")
+    ng_payload = data['ng_payload']
+
+    if len(data['seg_pairs']) < limit:
+        limit = len(data['seg_pairs'])
+    for i, p in enumerate(data['seg_pairs'][:limit]):
+        payload = deepcopy(ng_payload)
+
+        payload['layers']['seg']['objectAlpha'] = 0.99
+        payload['layers']['seg']['segments'] = [str(p['seg_id'])]
+        payload['layers']['seg']['segmentColors'] = {str(p['seg_id']): "#ff0000"}
+        if 'gt' in payload['layers']:
+            payload['layers']['gt']['objectAlpha'] = 0.99
+            payload['layers']['gt']['segments'] = [str(p['gt_id'])]
+            payload['layers']['gt']['segmentColors'] = {str(p['gt_id']): "#00ffff"}
+        url = "https://{}/#!{}".format(ng_host, urllib.parse.quote(json.dumps(payload)))
+        msg += """<p>
 <a href={url} target="_blank">{idx}. {s1} ({size1}), {s2} ({size2})</a></p>""".format(
-                idx=i,
-                url=url,
-                s1=p['seg_id'],
-                size1=p['seg_size'],
-                s2=p['gt_id'],
-                size2=p['gt_size'],
-            )
+            idx=i,
+            url=url,
+            s1=p['seg_id'],
+            size1=p['seg_size'],
+            s2=p['gt_id'],
+            size2=p['gt_size'],
+        )
     return msg
 
 print("diff server started")

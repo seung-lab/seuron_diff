@@ -1,2 +1,2 @@
-cloud-volume==0.65.3
+cloud-files==4.6.1
 Flask==1.1.1
